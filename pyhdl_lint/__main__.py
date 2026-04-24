@@ -34,8 +34,8 @@ def main():
     engine = Engine()
     
     # Load rules for the specific language
-    base_path = os.path.dirname(os.path.dirname(__file__))
-    rules_dir = os.path.join(base_path, "pyhdl_lint", "languages", language, "rules")
+    current_dir = os.path.dirname(__file__)
+    rules_dir = os.path.join(current_dir, "languages", language, "rules")
     
     engine.load_rules(rules_dir)
     

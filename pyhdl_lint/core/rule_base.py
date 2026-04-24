@@ -1,26 +1,29 @@
 from abc import ABC, abstractmethod
+from enum import Enum
+
+class Severity(Enum):
+    ERROR = "ERROR"
+    WARNING = "WARNING"
+    INFO = "INFO"
 
 class BaseRule(ABC):
-    def __init__(self, id, description):
+    def __init__(self, id, description, severity=Severity.ERROR):
         self.id = id
         self.description = description
+        self.severity = severity
 
     @abstractmethod
     def check(self, context):
-        """
-        Perform the linting check.
-        :param context: A dictionary or object containing the file content, 
-                       tokens, or AST to be checked.
-        :return: A list of violations.
-        """
         pass
 
 class Violation:
-    def __init__(self, rule_id, line, column, message):
+    def __init__(self, rule_id, line, column, message, severity=Severity.ERROR):
         self.rule_id = rule_id
         self.line = line
         self.column = column
         self.message = message
+        self.severity = severity
 
     def __str__(self):
-        return f"[{self.rule_id}] Line {self.line}, Col {self.column}: {self.message}"
+        sev_str = f"[{self.severity.value}] " if self.severity != Severity.ERROR else ""
+        return f"{sev_str}[{self.rule_id}] Line {self.line}, Col {self.column}: {self.message}"

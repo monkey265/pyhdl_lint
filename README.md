@@ -32,7 +32,17 @@ class MyNewRule(BaseRule):
         return []
 ```
 
+## Installation
+
+You can install the linter directly from the source directory:
+
+```bash
+pip install .
+```
+
+This will install the `pyhdl-lint` command in your environment.
+
 ## Usage
 ```bash
-python -m pyhdl_lint <path_to_hdl_file>
+pyhdl-lint <path_to_hdl_file>
 ```
