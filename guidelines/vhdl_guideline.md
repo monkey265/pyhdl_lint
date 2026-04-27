@@ -2,7 +2,7 @@
 
 | Rule | Rule Code | Implemented |
 | --- | --- | --- |
-| Entity name uppercase | VHDL-001 | [x] |
+| Entity name lowercase | VHDL-001 | [x] |
 | Keywords ALL CAPS | VHDL-002 | [x] |
 | Signals/Variables lowercase | VHDL-003 | [x] |
 | Signal prefix `s_` | VHDL-004 | [x] |
@@ -11,6 +11,18 @@
 | Process label required | VHDL-007 | [x] |
 | Process label suffix `_proc` | VHDL-008 | [x] |
 | Library `work` restricted | VHDL-009 | [x] |
+| IF/FOR/WHILE named | VHDL-010 | [x] |
+| STD entities ALL CAPS | VHDL-011 | [x] |
+| rising_edge on clocks only | VHDL-012 | [x] |
+| No ELSE in state transitions | VHDL-013 | [x] |
+| FSM default assignments | VHDL-015 | [x] |
+| Forbidden libraries | VHDL-016 | [x] |
+| Integer range limit | VHDL-017 | [x] |
+| Combinatorial sensitivity ALL | VHDL-018 | [x] |
+| Port ordering (Clk, Rst) | VHDL-019 | [x] |
+| Reset active low naming | VHDL-020 | [x] |
+| Latch prevention (IF ELSE) | VHDL-021 | [x] |
+| Safe FSM attribute | VHDL-022 | [x] |
 
 # Basics
 
@@ -19,15 +31,16 @@
 - Tip is recommended
 
 
-- Keywords must be in all caps.
+- Entity should be lowercase.
+- Keywords **must** be in **ALL CAPS**.
 - Functions and procedures are permitted to be in lowercase.
-- Signals and variables must be lowercase.
+- Signals and variables **must** be lowercase.
 - Signals should have prefix `s_`
 - Variables should have prefix `v_`
-- STD and provided functions, procedures, typecasts etc. should be all caps, custom datatypes, procedures, functions can be lowercase.
+- **STD** and provided functions, procedures, typecasts etc. should be all caps, custom datatypes, procedures, functions can be lowercase.
 
-- Created library must not be named work.
-- IF/FOR/WHILE statements should be named.
+- Created library **must not** be named work.
+- **IF/FOR/WHILE** statements should be named.
 
 # Port and generics
 - Generics should have prefix `g_`
@@ -66,7 +79,7 @@ PORT (
 
 # Process
 
-- Process must be named.
+- Process **must** be named.
 - Name should be `something_proc`
 - Example:
 
@@ -78,7 +91,7 @@ END PROCESS main_proc;
 ```
 
 - Process with senstivity to only clock and reset should be in clocked modules.
-- Process with sensitivity list ALL should be used for combinatorial modules.
+- Process with sensitivity list **ALL** should be used for combinatorial modules.
 
 ```vhdl
 reg_proc: PROCESS(clk_in, areset_n_in)
@@ -93,52 +106,185 @@ END PROCESS reg_proc;
 
 ## Combinatorial process
 
-- Combinatorial process must have ALL sensitivity - `PROCESS(ALL)`
-- If you are using VHDL 93, sensitivity list must contain every signal read inside the process.
+- Combinatorial process **must** have **ALL** sensitivity - `PROCESS(ALL)`
+- If you are using VHDL 93, sensitivity list **must** contain every signal read inside the process.
 
 ### Latch prevention
 
-- To ensure the logic is purely combinational and not a latch, every signal assigned in the process must be assigned a value in all possible branches (i.e., every IF needs an ELSE, every CASE needs a WHEN OTHERS)
+- To ensure the logic is purely combinational and not a latch, every signal assigned in the process **must** be assigned a value in all possible branches (i.e., every **IF** needs an **ELSE**, every **CASE** needs a **WHEN OTHERS**)
 
 # Architecture
 
 # FSM
 
+FSMs (Finite State Machines) are the heart of VHDL control logic. Proper implementation ensures speed, resource efficiency, and robustness against "illegal state" hangs.
+
 ## Process structure
 
 ### Two-Process FSM
 
+Separates combinatorial next-state logic from sequential state registers.
+
 ### One-Process FSM
-- Reccomended on FPGA
+
+- Recommended on FPGA.
+- Results in registered outputs, which is better for timing closure.
 
 ## State changes
 
-- Never use rising_edge() on input signals (data) to control state changes.
+- **Never** use `rising_edge()` on input signals (data) to control state changes.
 - If an edge trigger is required, generate a pulse signal (lasts one clock cycle) and check the level of that pulse.
-- When specifing state transitions via IF case, do not specify else cause, leave only plain if. Synthetiser will complain.
+- When specifing state transitions via **IF** case, and **ELSE** would only point to the active state, then do not specify **ELSE** cause, leave only plain **IF**.
+
+Example:
+```vhdl
+  -- RIGHT (No ELSE needed for synthesizable FSM)
+  IF start = '1' THEN
+      next_state <= RUN;
+  END IF;
+  -- (Assumes default assignment or OTHERS handles IDLE if necessary)
+```
+
+## FSM Optimizations and Hacks
+
+### The "Default Assignment" Hack
+
+Instead of assigning outputs in every single **WHEN** branch, assign them **once** at the very top of the process. This ensures no latches are created and makes the state logic much cleaner.
+
+```vhdl
+fsm_proc: PROCESS(clk_in)
+BEGIN
+    IF rising_edge(clk_in) THEN
+        -- CORRECT: Default assignments
+        s_output_val <= '0'; 
+        s_busy       <= '1';
+
+        CASE s_current_state IS
+            WHEN ST_IDLE =>
+                s_busy <= '0';
+                IF s_start = '1' THEN
+                    s_current_state <= ST_RUN;
+                END IF;
+            
+            WHEN ST_RUN =>
+                s_output_val <= '1';
+        END CASE;
+    END IF;
+END PROCESS fsm_proc;
+```
+
+### The "Safe FSM" Attribute
+
+In high-reliability designs, a radiation bit-flip could kick an FSM into an undefined state. This attribute forces the compiler to include recovery logic.
+
+| Attribute | Value | Description |
+| :--- | :--- | :--- |
+| **`fsm_safe_state`** | `"default_state"` | Forces the FSM to return to reset state if it enters an illegal value. |
+| **`fsm_encoding`** | `"one_hot"`, `"gray"` | Overrides the compiler's choice for state bit encoding. |
+
+**Example:**
+
+```vhdl
+TYPE t_state IS (ST_IDLE, ST_READ, ST_WRITE);
+SIGNAL s_state : t_state;
+
+ATTRIBUTE fsm_safe_state : STRING;
+ATTRIBUTE fsm_safe_state OF s_state : SIGNAL IS "default_state";
+```
+
+### Registered Look-Ahead Outputs
+
+To fix slow combinatorial output logic, calculate the **next** output based on the **next** state within the same clock cycle so that State and Output change at the same clock edge.
+
+```vhdl
+CASE s_current_state IS
+    WHEN ST_IDLE =>
+        IF s_start = '1' THEN
+            s_current_state <= ST_RUN;
+            s_output_reg    <= '1'; -- Look ahead
+        END IF;
+END CASE;
+```
+
+### The "Transition Bit" Hack
+
+Use a "Last State" signal to easily detect when the FSM has moved without complex edge-detection.
+
+```vhdl
+s_state_changed <= '1' WHEN (s_current_state /= s_last_state) ELSE '0';
+```
+
+### Integer-Based FSMs for Math
+
+If an FSM follows a mathematical sequence, using an **INTEGER** range instead of an **ENUMERATION** allows math operators on states.
+
+```vhdl
+SIGNAL s_state : INTEGER RANGE 0 TO 15;
+-- ...
+WHEN 0 TO 5 => 
+    s_state <= s_state + 1;
+```
+
+## Handling counters and incrementing in FSMs
+
+In VHDL, signal assignments take a clock cycle to update. Handling counters correctly prevents "off-by-one" errors.
+
+### 1. The "Exit Condition" Look-Ahead
+Check for `TERMINAL_COUNT - 1` when using signals to avoid staying in a state for one extra cycle.
+
+```vhdl
+-- RIGHT: Stays for exactly 10 cycles
+IF s_count = g_LIMIT - 1 THEN
+    s_count <= 0;
+    s_state <= ST_NEXT;
+ELSE
+    s_count <= s_count + 1;
+END IF;
+```
+
+### 2. Use a "Terminal Count" (TC) Signal
+Calculate terminal counts outside the **CASE** statement to reduce logic depth and improve timing.
+```vhdl
+s_count_done <= '1' WHEN s_count = g_LIMIT - 1 ELSE '0';
+```
+
+### 3. The "State Entry" Reset
+Reset counters in the **transition** leading into the counting state to ensure it starts from zero every time the state is entered.
+
+### 4. Variables for "Same-Cycle" Logic
+If you must use an updated increment value immediately within the same clock cycle, use a **VARIABLE**.
+
+### FSM Counter Patterns
+
+| Pattern | Best For | Pros | Cons |
+| :--- | :--- | :--- | :--- |
+| **Signal Increment** | General Purpose | Easy to debug in waveforms. | 1-cycle latency in comparisons. |
+| **Variable Increment**| Complex Math | Logic happens in "zero time." | Harder to see in some simulators. |
+| **External TC** | High Speed ($F_{max}$) | Best for timing closure. | Requires an extra signal. |
+
+### Counter Overflow Hack
+Always use range-limited integers and a reset in the **WHEN OTHERS** branch to prevent permanent hangs.
+
+### The "Shared Counter" Hack
+Use one generic counter signal and reset it on every state transition to significantly reduce FPGA area (LUT usage) when multiple states need counting logic.
+
+> **Tip:** Always use `numeric_std` and cast to **UNSIGNED** when incrementing vectors. Avoid the non-standard `std_logic_unsigned` library.
 
 # Appendix
 
 ## Attributes
 
-An attribute provides additional information about a specific part of a VHDL description, such as a type, range, signal, or function. Predefined attributes can return constants, functions, signals, or ranges.
-
-While the VHDL standard defines a robust set of predefined attributes (listed below), users can also define their own (see *Attributes (User-Defined)*).
+An attribute provides additional information about a specific part of a VHDL description, such as a type, range, signal, or function.
 
 ### Syntax
 
 ```vhdl
 object_name[ signature ]'attribute_name[ ( expression ) ]
--- signature = [ type_name, ... ] return type_name
-
 ```
 
 ---
 
 ## 1. Global Type Attributes
-
-Each type or subtype `T` has a basic attribute indicating its base type. This is primarily used as a prefix for other attributes.
-
 | Attribute | Result |
 | --- | --- |
 | `T'Base` | Returns the base type of `T`. |
@@ -146,111 +292,103 @@ Each type or subtype `T` has a basic attribute indicating its base type. This is
 ---
 
 ## 2. Scalar Type Attributes
-
-These attributes return bounds and string representations of scalar types.
-
 | Attribute | Return Type | Description |
 | --- | --- | --- |
 | `T'Left` | Same as `T` | The leftmost value of `T`. |
 | `T'Right` | Same as `T` | The rightmost value of `T`. |
 | `T'Low` | Same as `T` | The least value in `T`. |
 | `T'High` | Same as `T` | The greatest value in `T`. |
-| `T'Ascending` | `Boolean` | `True` if `T` is an ascending range, `False` otherwise. |
-| `T'Image(x)` | `String` | A textual representation of value `x`. |
-| `T'Value(s)` | Base of `T` | The value in `T` represented by string `s`. |
+| `T'Ascending` | `Boolean` | `True` if `T` is an ascending range. |
+| `T'Image(x)` | `String` | Textual representation of value `x`. |
+| `T'Value(s)` | Base of `T` | Value in `T` represented by string `s`. |
 
 ---
 
 ## 3. Discrete/Physical Type Attributes
-
-These attributes facilitate navigation through discrete or physical types (e.g., integers, enumerations).
-
 | Attribute | Return Type | Description |
 | --- | --- | --- |
 | `T'Pos(s)` | `Integer` | Position number of `s` in `T`. |
 | `T'Val(x)` | Base of `T` | Value at integer position `x` in `T`. |
-| `T'Succ(s)` | Base of `T` | Value at position one greater than `s`. |
-| `T'Pred(s)` | Base of `T` | Value at position one less than `s`. |
-| `T'Leftof(s)` | Base of `T` | Value at position one to the left of `s`. |
-| `T'Rightof(s)` | Base of `T` | Value at position one to the right of `s`. |
 
-> **Note:** Synthesis tools generally discourage the use of `Pos`, `Val`, `Succ`, `Pred`, `Leftof`, and `Rightof` for hardware generation.
+> **Note:** Synthesis tools generally discourage navigation attributes for hardware generation.
 
 ---
 
 ## 4. Array Attributes
-
-These attributes are essential for writing generic, reusable code that adapts to arrays of any size.
-
 | Attribute | Result |
 | --- | --- |
 | `A'Left(n)` | Leftmost value in index range of dimension `n`. |
 | `A'Right(n)` | Rightmost value in index range of dimension `n`. |
-| `A'Low(n)` | Lower bound of index range of dimension `n`. |
-| `A'High(n)` | Upper bound of index range of dimension `n`. |
-| `A'Range(n)` | The specific index range of dimension `n` (e.g., `7 downto 0`). |
-| `A'Reverse_range(n)` | The reversed index range of dimension `n` (e.g., `0 to 7`). |
+| `A'Range(n)` | The specific index range (e.g., `7 downto 0`). |
 | `A'Length(n)` | Number of values in the `n`-th index range. |
-| `A'Ascending(n)` | `True` if index range is ascending (`to`), `False` otherwise (`downto`). |
 
 ---
 
 ## 5. Signal Attributes
-
-Signal attributes are used heavily in simulation models and behavioral verification. Some (like `'Event` and `'Stable`) are crucial for detecting edges or implementing timing checks.
-
 | Attribute | Result |
 | --- | --- |
 | `S'Delayed(t)` | Signal `S` delayed by `t` time units. |
 | `S'Stable(t)` | `True` if no event has occurred on `S` for `t` time units. |
-| `S'Quiet(t)` | `True` if no *transaction* (assignment) has occurred on `S` for `t` time units. |
-| `S'Transaction` | A `Bit` signal that toggles in every cycle where a transaction occurs on `S`. |
-| `S'Event` | `True` if an event (value change) occurred on `S` in the current cycle. |
-| `S'Active` | `True` if a transaction (assignment, even if value is same) occurred on `S` in the current cycle. |
-| `S'Last_event` | Time elapsed since the last event on `S`. |
-| `S'Last_active` | Time elapsed since the last transaction on `S`. |
+| `S'Event` | `True` if an event occurred on `S` in the current cycle. |
 | `S'Last_value` | The previous value of `S` before the last event. |
 | `S'Driving` | `True` if the current process is driving `S`. |
-| `S'Driving_value` | The value currently being driven onto `S` by the enclosing process. |
 
 ---
-
-- When used inside GENERATE statement, be careful about static signal prefix. Especially when using attribute on arrays. You wont be able to check events of individual array components but just whole array.
 
 ## 6. Named Entity Attributes
-
-Useful for reporting, assertions, and logging, allowing messages to pinpoint specific hierarchy paths.
-
 | Attribute | Result |
 | --- | --- |
-| `E'Simple_name` | String of the simple name defined in the declaration of `E`. |
 | `E'Path_name` | String describing the full hierarchy path to `E`. |
-| `E'Instance_name` | Similar to `Path_name` but includes entity/architecture names for every component instance in the path. |
+| `E'Instance_name` | Full path including entity/architecture names. |
 
 ---
 
-## Examples
+## 7. Simulation & Delta Control
 
-**Scalar Types:**
+### 7.1 Process Control
+| Keyword | Description |
+| :--- | :--- |
+| **`POSTPONED`** | Ensures the block executes only during the **last** delta cycle of a simulation time step. |
 
+### 7.2 Delay Modeling
+| Keyword | Delay Type | Description |
+| :--- | :--- | :--- |
+| **`TRANSPORT`** | Transport | Models a wire; all pulses pass through. |
+| **`REJECT`** | Inertial | Sets the rejection limit for pulses. |
+
+### 7.3 Simulation Hacks & Testbenching
+| Technique | Description |
+| :--- | :--- |
+| **`WAIT FOR 0 NS;`** | Forces simulator to the next **delta cycle**. |
+| **`FORCE`** | Overrides a signal's value (VHDL-2008). |
+| **`RELEASE`** | Removes a **`FORCE`** override. |
+
+> **Synthesis Note:** All keywords in Section 7 are **non-synthesizable**.
+
+### 7.4 Driving Attributes
+| Attribute | Description |
+| :--- | :--- |
+| **`S'DRIVING`** | Returns `TRUE` if the current process is contributing a value. |
+| **`S'DRIVING_VALUE`** | Returns the value this specific process is trying to drive. |
+
+### 7.5 Hierarchical Reference (External Names)
+Access internal signals without ports: `<<SIGNAL .path.to.signal : type>>`
+
+### 7.6 Simulation Termination
+Use `FINISH` or `STOP` from `STD.ENV` to end simulations gracefully.
+
+### 7.7 Transaction Tracking (`'TRANSACTION`)
+A `BIT` signal that toggles every time an assignment is made, even if the value does not change.
+
+---
+
+## 8. Other VHDL useful stuff
+
+### 8.1 Scoping with `BLOCK`
+Creates a local scope for signals to avoid naming interference in large architectures.
+
+### 8.2 The `ALIAS` Keyword
+Creates a "nickname" for a slice of a signal or a large vector.
 ```vhdl
-type T is (low, middle, high); 
--- T'Left  = low
--- T'Right = high
-
+ALIAS a_payload_id : STD_LOGIC_VECTOR(7 DOWNTO 0) IS s_long_bus(119 DOWNTO 112);
 ```
-
-**Arrays:**
-
-```vhdl
-signal S: std_logic_vector(3 downto 0);
--- S'Range   = 3 downto 0
--- S'Length  = 4
--- S'High    = 3
--- S'Low     = 0
-
-```
-
-**Synthesis Note:**
-Attributes of enumeration types, as well as navigation attributes (`Pos`, `Val`, `Succ`, etc.), should generally be avoided in synthesizable RTL code.
-

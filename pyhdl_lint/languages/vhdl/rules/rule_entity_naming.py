@@ -4,7 +4,7 @@ class EntityNameRule(BaseRule):
     def __init__(self):
         super().__init__(
             id="VHDL-001", 
-            description="Entity name should be in uppercase."
+            description="Entity name should be in lowercase."
         )
 
     def check(self, context):
@@ -22,13 +22,13 @@ class EntityNameRule(BaseRule):
                     if entity_name.endswith(";"):
                         entity_name = entity_name[:-1]
                     
-                    if not entity_name.isupper():
+                    if not entity_name.islower():
                         violations.append(
                             Violation(
                                 self.id, 
                                 i + 1, 
                                 line.find(entity_name), 
-                                f"Entity name '{entity_name}' should be uppercase."
+                                f"Entity name '{entity_name}' should be lowercase."
                             )
                         )
         return violations
