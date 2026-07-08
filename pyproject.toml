@@ -14,6 +14,7 @@ authors = [
 ]
 dependencies = [
     "colorama",
+    "hdlConvertor @ git+https://github.com/Nic30/hdlConvertor.git",
 ]
 
 [project.scripts]

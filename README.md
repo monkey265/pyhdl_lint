@@ -34,10 +34,28 @@ class MyNewRule(BaseRule):
 
 ## Installation
 
-You can install the linter directly from the source directory:
+This linter relies on the `hdlConvertor` parser engine, which compiles a C++ extension using ANTLR4. 
+
+### 1. Install System Dependencies
+
+You must install Java, the ANTLR4 build tools, and the C++ runtime development packages:
+
+**On Debian/Ubuntu:**
+```bash
+sudo apt update
+sudo apt install default-jre antlr4 libstringtemplate4-java libantlr4-runtime-dev
+```
+
+### 2. Install Linter & Python Dependencies
+
+You can install the linter and compile its dependencies in editable mode using `pip` or `uv`:
 
 ```bash
-pip install .
+# Using pip
+pip install -e .
+
+# Or using uv (much faster)
+uv pip install -e .
 ```
 
 This will install the `pyhdl-lint` command in your environment.

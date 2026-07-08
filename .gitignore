@@ -150,3 +150,12 @@ cython_debug/
 
 # VS Code
 .vscode/
+
+# Ruff
+.ruff_cache/
+
+# Scikit-build / Cython
+_skbuild/
+
+# uv lockfile
+uv.lock
