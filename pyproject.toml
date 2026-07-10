@@ -7,7 +7,7 @@ name = "pyhdl_lint"
 version = "0.1.0"
 description = "A modular HDL linter for VHDL, Verilog, and SystemVerilog"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
     {name = "User", email = "user@example.com"}
@@ -15,7 +15,11 @@ authors = [
 dependencies = [
     "colorama",
     "hdlConvertor @ git+https://github.com/Nic30/hdlConvertor.git",
+    "hdlConvertorAst @ git+https://github.com/Nic30/hdlConvertorAst.git",
 ]
+
+[project.optional-dependencies]
+test = ["pytest"]
 
 [project.scripts]
 pyhdl-lint = "pyhdl_lint.__main__:main"

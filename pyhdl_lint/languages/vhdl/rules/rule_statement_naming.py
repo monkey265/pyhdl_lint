@@ -11,7 +11,7 @@ class StatementNamingRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         # Pattern to find IF/FOR/WHILE starts
         # Matches: [label:] (IF|FOR|WHILE)

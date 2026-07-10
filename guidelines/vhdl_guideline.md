@@ -1,28 +1,32 @@
 # Implementation Status
 
-| Rule | Rule Code | Implemented |
-| --- | --- | --- |
-| Entity name lowercase | VHDL-001 | [x] |
-| Keywords ALL CAPS | VHDL-002 | [x] |
-| Signals/Variables lowercase | VHDL-003 | [x] |
-| Signal prefix `s_` | VHDL-004 | [x] |
-| Variable prefix `v_` | VHDL-005 | [x] |
-| Generic prefix `g_` | VHDL-006 | [x] |
-| Process label required | VHDL-007 | [x] |
-| Process label suffix `_proc` | VHDL-008 | [x] |
-| Library `work` restricted | VHDL-009 | [x] |
-| IF/FOR/WHILE named | VHDL-010 | [x] |
-| STD entities ALL CAPS | VHDL-011 | [x] |
-| rising_edge on clocks only | VHDL-012 | [x] |
-| No ELSE in state transitions | VHDL-013 | [x] |
-| FSM default assignments | VHDL-015 | [x] |
-| Forbidden libraries | VHDL-016 | [x] |
-| Integer range limit | VHDL-017 | [x] |
-| Combinatorial sensitivity ALL | VHDL-018 | [x] |
-| Port ordering (Clk, Rst) | VHDL-019 | [x] |
-| Reset active low naming | VHDL-020 | [x] |
-| Latch prevention (IF ELSE) | VHDL-021 | [x] |
-| Safe FSM attribute | VHDL-022 | [x] |
+| Rule | Rule Code | Implemented | Notes |
+| --- | --- | --- | --- |
+| Entity name lowercase | VHDL-001 | [x] | |
+| Keywords ALL CAPS | VHDL-002 | [x] | |
+| Signals/Variables lowercase | VHDL-003 | [x] | |
+| Signal prefix `s_` | VHDL-004 | [x] | |
+| Variable prefix `v_` | VHDL-005 | [x] | |
+| Generic prefix `g_` | VHDL-006 | [x] | |
+| Process label required | VHDL-007 | [x] | |
+| Process label suffix `_proc` | VHDL-008 | [x] | |
+| Library `work` restricted | VHDL-009 | [x] | |
+| IF/FOR/WHILE named | VHDL-010 | [x] | |
+| STD entities ALL CAPS | VHDL-011 | [x] | |
+| rising_edge on clocks only | VHDL-012 | [x] | |
+| No ELSE in state transitions | VHDL-013 | [x] | |
+| *(reserved, unused)* | VHDL-014 | - | no rule uses this code |
+| FSM default assignments | VHDL-015 | [x] | |
+| Forbidden libraries | VHDL-016 | [x] | |
+| Integer range limit | VHDL-017 | [x] | |
+| Combinatorial sensitivity ALL | VHDL-018 | [x] | |
+| Port ordering (Clk, Rst) | VHDL-019 | [x] | |
+| Reset active low naming | VHDL-020 | [x] | only checks `_n` suffix, not synchronicity (see VHDL-024) |
+| Latch prevention (IF ELSE) | VHDL-021 | [x] | |
+| Safe FSM attribute | VHDL-022 | [x] | |
+| Port comments indicate category (inputs/outputs/debug) | VHDL-023 | [x] | lenient: flags only if the port list has zero comments at all, not exact category wording |
+| Reset name reflects synchronicity (`areset_n` vs `rst_n`) | VHDL-024 | [x] | AST-based; correlates entity port naming against process sensitivity-list usage across the whole architecture |
+| Clocked process sensitivity limited to clk/reset only | VHDL-025 | [x] | AST-based; distinct from VHDL-018's combinatorial `PROCESS(ALL)` check |
 
 # Basics
 

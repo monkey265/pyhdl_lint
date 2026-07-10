@@ -26,7 +26,7 @@ class KeywordCaseRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         # Simple regex to find words (not inside strings or comments)
         # Note: This is a simplified version. A real parser would be better.

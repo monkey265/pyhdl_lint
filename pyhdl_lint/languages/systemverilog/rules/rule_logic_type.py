@@ -1,24 +1,24 @@
-from pyhdl_lint.core.rule_base import BaseRule, Violation
+from hdlConvertorAst.hdlAst import HdlIdDef, HdlOp, HdlValueId
 
-class LogicTypeRule(BaseRule):
-    def __init__(self):
+from pyhdl_lint.core.rule_base import AstRule
+
+def _type_mentions_reg(type_expr: object) -> bool:
+    if isinstance(type_expr, HdlValueId):
+        return type_expr.val == "reg"
+    if isinstance(type_expr, str):
+        return type_expr == "reg"
+    if isinstance(type_expr, HdlOp):
+        return any(_type_mentions_reg(op) for op in type_expr.ops)
+    return False
+
+class LogicTypeRule(AstRule):
+    def __init__(self) -> None:
         super().__init__(
-            id="SV-001", 
+            id="SV-001",
             description="Use 'logic' instead of 'reg' in SystemVerilog."
         )
 
-    def check(self, context):
-        violations = []
-        lines = context["lines"]
-
-        for i, line in enumerate(lines):
-            if "reg " in line:
-                violations.append(
-                    Violation(
-                        self.id, 
-                        i + 1, 
-                        line.find("reg "), 
-                        "Prefer 'logic' over 'reg' in SystemVerilog."
-                    )
-                )
-        return violations
+    def visit_HdlIdDef(self, o: HdlIdDef) -> HdlIdDef:
+        if _type_mentions_reg(o.type):
+            self.add_violation(o, "Prefer 'logic' over 'reg' in SystemVerilog.")
+        return super().visit_HdlIdDef(o)

@@ -14,7 +14,7 @@ class IntegerRangeRule(BaseRule):
         # Matches: signal <name> : integer; (without range)
         pattern = re.compile(r'\bsignal\s+(\w+)\s*:\s*integer\s*(?:;|\)|:=)', re.IGNORECASE)
         
-        lines = context["lines"]
+        lines = context.lines
         for i, line in enumerate(lines):
             code_line = line.split('--')[0]
             match = pattern.search(code_line)

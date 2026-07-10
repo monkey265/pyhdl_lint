@@ -11,7 +11,7 @@ class CombinatorialSensitivityRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         inside_process = False
         is_clocked = False

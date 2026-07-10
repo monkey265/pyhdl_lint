@@ -16,7 +16,7 @@ class GenericPrefixRule(BaseRule):
         pattern = re.compile(r'\b(\w+)\s*:\s*\w+\s*(?:;|\)|:=)', re.IGNORECASE)
         
         inside_generic = False
-        lines = context["lines"]
+        lines = context.lines
         for i, line in enumerate(lines):
             code_line = line.split('--')[0].strip().upper()
             if "GENERIC" in code_line and "(" in code_line:

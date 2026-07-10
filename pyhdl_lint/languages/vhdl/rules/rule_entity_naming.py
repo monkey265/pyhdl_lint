@@ -1,34 +1,15 @@
-from pyhdl_lint.core.rule_base import BaseRule, Violation
+from hdlConvertorAst.hdlAst import HdlModuleDec
 
-class EntityNameRule(BaseRule):
-    def __init__(self):
+from pyhdl_lint.core.rule_base import AstRule
+
+class EntityNameRule(AstRule):
+    def __init__(self) -> None:
         super().__init__(
-            id="VHDL-001", 
+            id="VHDL-001",
             description="Entity name should be in lowercase."
         )
 
-    def check(self, context):
-        violations = []
-        content = context["content"]
-        lines = content.splitlines()
-
-        for i, line in enumerate(lines):
-            stripped_line = line.strip().lower()
-            if stripped_line.startswith("entity "):
-                parts = line.strip().split()
-                if len(parts) > 1:
-                    entity_name = parts[1]
-                    # Check if it's actually a name (not followed by ;)
-                    if entity_name.endswith(";"):
-                        entity_name = entity_name[:-1]
-                    
-                    if not entity_name.islower():
-                        violations.append(
-                            Violation(
-                                self.id, 
-                                i + 1, 
-                                line.find(entity_name), 
-                                f"Entity name '{entity_name}' should be lowercase."
-                            )
-                        )
-        return violations
+    def visit_HdlModuleDec(self, o: HdlModuleDec) -> HdlModuleDec:
+        if not o.name.islower():
+            self.add_violation(o, f"Entity name '{o.name}' should be lowercase.")
+        return super().visit_HdlModuleDec(o)

@@ -11,13 +11,13 @@ class SignalVariableCaseRule(BaseRule):
 
     def check(self, context):
         violations = []
-        content = context["content"]
+        content = context.content
         
         # Regex to find signal and variable declarations
         # Matches: signal/variable <name> :
         pattern = re.compile(r'\b(signal|variable)\s+(\w+)\s*:', re.IGNORECASE)
         
-        lines = context["lines"]
+        lines = context.lines
         for i, line in enumerate(lines):
             # Strip comments
             code_line = line.split('--')[0]

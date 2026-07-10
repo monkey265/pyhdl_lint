@@ -14,7 +14,7 @@ class LibraryWorkRule(BaseRule):
         # Matches: library work;
         pattern = re.compile(r'\blibrary\s+work\b', re.IGNORECASE)
         
-        lines = context["lines"]
+        lines = context.lines
         for i, line in enumerate(lines):
             code_line = line.split('--')[0]
             if pattern.search(code_line):

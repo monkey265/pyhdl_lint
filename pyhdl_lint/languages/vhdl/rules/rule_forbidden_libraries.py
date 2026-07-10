@@ -14,7 +14,7 @@ class ForbiddenLibrariesRule(BaseRule):
         # Matches: use ieee.std_logic_unsigned.all; or library std_logic_unsigned;
         pattern = re.compile(r'\b(std_logic_unsigned|std_logic_arith)\b', re.IGNORECASE)
         
-        lines = context["lines"]
+        lines = context.lines
         for i, line in enumerate(lines):
             code_line = line.split('--')[0]
             if pattern.search(code_line):

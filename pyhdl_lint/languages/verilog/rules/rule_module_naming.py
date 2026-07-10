@@ -9,7 +9,7 @@ class ModuleNameRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
 
         for i, line in enumerate(lines):
             stripped = line.strip()

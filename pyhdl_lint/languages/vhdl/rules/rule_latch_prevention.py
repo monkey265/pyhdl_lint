@@ -11,7 +11,7 @@ class LatchPreventionRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         inside_comb_process = False
         if_stack = [] # Store line numbers of IFs

@@ -58,7 +58,7 @@ ruff check .
 
 ### Professional Code Standards
 - **No emojis**: Keep code and output professional - avoid emojis in code, comments, or CLI output
-- **No hardcoding**: Use constants, configuration classes, or environment variables
+- **No hardcoding**: Use constants, configura   tion classes, or environment variables
 - **Proper error handling**: Consistent error patterns with informative messages
 - **Cross-platform paths**: Use `pathlib.Path` for all file operations
 
@@ -74,8 +74,8 @@ pyhdl-lint <file_path>  # Main CLI entry point
 - **Engine** (`pyhdl_lint/core/engine.py`): Dynamic rule loader and execution engine
 - **Parser** (`pyhdl_lint/core/parser.py`): AST generator using `hdlConvertor`
 - **Reporter** (`pyhdl_lint/core/reporter.py`): Format and output violation reports
-- **Rule Base** (`pyhdl_lint/core/rule_base.py`): Base classes for rules and violations
-- **Configuration** (`pyhdl_lint/utils/config.py`): Config loader and status manager
+- **Rule Base** (`pyhdl_lint/core/rule_base.py`): `BaseRule`/`AstRule` base classes, `LintContext`, `Violation`
+- **Configuration** (`pyhdl_lint/utils/config.py`): Loads `disabled_rules` from `.pyhdl-lint.toml` or `pyproject.toml`'s `[tool.pyhdl_lint]` table (cwd only, `.pyhdl-lint.toml` wins if both present); requires Python 3.11+ for stdlib `tomllib`
 
 ## Development Workflow - MANDATORY
 
@@ -104,14 +104,17 @@ pyhdl-lint <file_path>  # Main CLI entry point
 ## Key Implementation Patterns
 
 ### Creating a New Linting Rule
-```python
-from pathlib import Path
-from typing import List
-from pyhdl_lint.core.rule_base import BaseRule, Violation, Severity
 
-class MyNewRule(BaseRule):
+Prefer `AstRule` (traverses the real `hdlConvertorAst` AST via `visit_<NodeType>`
+overrides, no regex on raw text):
+
+```python
+from hdlConvertorAst.hdlAst import HdlModuleDec
+from pyhdl_lint.core.rule_base import AstRule, Severity
+
+class MyNewRule(AstRule):
     """Rule to check for specific naming conventions or styles."""
-    
+
     def __init__(self) -> None:
         super().__init__(
             id="RULE-001",
@@ -119,12 +122,15 @@ class MyNewRule(BaseRule):
             severity=Severity.WARNING
         )
 
-    def check(self, context: dict) -> List[Violation]:
-        violations: List[Violation] = []
-        ast = context.get("ast")
-        # Custom AST traversal or pattern matching
-        return violations
+    def visit_HdlModuleDec(self, o: HdlModuleDec) -> HdlModuleDec:
+        if "bad_pattern" in o.name:
+            self.add_violation(o, f"'{o.name}' matches a forbidden pattern.")
+        return super().visit_HdlModuleDec(o)
 ```
+
+Fall back to `BaseRule` directly (implementing `check(context: LintContext)` against
+`context.content`/`context.lines`) only for checks that genuinely need raw text.
+See `README.md` for the full guide and real examples in `pyhdl_lint/languages/`.
 
 ### Type-Safe File Operations
 ```python
@@ -144,6 +150,6 @@ def read_hdl_file(file_path: Path) -> Optional[str]:
 ## SOLID Principles for Linting Tools
 - **S**ingle Responsibility: Each rule class handles exactly one linting check
 - **O**pen/Closed: Extensible for new languages and rules without modifying core engine
-- **L**iskov Substitution: All custom rules must implement the `BaseRule` interface
-- **I**nterface Segregation: Rules receive a simple, unified analysis context dictionary
+- **L**iskov Substitution: All custom rules must implement the `BaseRule` interface (directly, or via the `AstRule` base for AST-driven checks)
+- **I**nterface Segregation: Rules receive a single, type-safe `LintContext`
 - **D**ependency Inversion: High-level engine depends on the `BaseRule` abstraction, not concrete rule classes

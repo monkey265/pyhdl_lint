@@ -15,7 +15,7 @@ class ResetActiveLowRule(BaseRule):
         # Simplified: look for any name containing rst or reset
         pattern = re.compile(r'\b(\w+)\b', re.IGNORECASE)
         
-        lines = context["lines"]
+        lines = context.lines
         for i, line in enumerate(lines):
             code_line = line.split('--')[0]
             # Exclude comments

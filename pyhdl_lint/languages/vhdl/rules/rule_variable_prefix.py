@@ -13,7 +13,7 @@ class VariablePrefixRule(BaseRule):
         violations = []
         pattern = re.compile(r'\bvariable\s+(\w+)\s*:', re.IGNORECASE)
         
-        lines = context["lines"]
+        lines = context.lines
         for i, line in enumerate(lines):
             code_line = line.split('--')[0]
             matches = pattern.finditer(code_line)

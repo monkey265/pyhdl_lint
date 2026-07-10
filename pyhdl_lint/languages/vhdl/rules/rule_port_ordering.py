@@ -11,7 +11,7 @@ class PortOrderingRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         inside_port = False
         port_index = 0

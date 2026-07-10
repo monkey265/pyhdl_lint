@@ -18,7 +18,7 @@ class StdFunctionCaseRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         for i, line in enumerate(lines):
             code_line = line.split('--')[0]

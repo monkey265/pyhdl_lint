@@ -11,7 +11,7 @@ class SafeFsmAttributeRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         state_signals = []
         safe_state_attributes = []
@@ -22,7 +22,7 @@ class SafeFsmAttributeRule(BaseRule):
             
             # Find signals that look like state signals
             if "signal" in low_line and "state" in low_line and ":" in low_line:
-                match = re.search(r'\bsignal\s+(\w+)\b', low_line)
+                match = re.search(r'\bsignal\s+(\w+)\s*:', low_line)
                 if match:
                     state_signals.append((i + 1, match.group(1)))
             

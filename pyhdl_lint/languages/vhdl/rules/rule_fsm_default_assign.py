@@ -11,7 +11,7 @@ class FsmDefaultAssignmentRule(BaseRule):
 
     def check(self, context):
         violations = []
-        lines = context["lines"]
+        lines = context.lines
         
         inside_fsm_process = False
         saw_assignment = False
