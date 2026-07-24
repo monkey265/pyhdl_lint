@@ -1,4 +1,5 @@
 """Tests for the __main__ CLI entry point, including multi-file/directory linting."""
+import json
 from pathlib import Path
 
 import pytest
@@ -67,3 +68,34 @@ def test_directory_all_clean_returns_zero(monkeypatch: pytest.MonkeyPatch, tmp_p
     (tmp_path / "clean.vhd").write_text("ENTITY my_entity IS\nEND ENTITY my_entity;\n")
     (tmp_path / "clean.v").write_text("module good_name (input clk);\nendmodule\n")
     assert run_cli(monkeypatch, str(tmp_path)) == 0
+
+
+def test_format_json_prints_only_a_json_array(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    vhd = tmp_path / "bad.vhd"
+    vhd.write_text("ENTITY MY_ENTITY IS\nEND ENTITY MY_ENTITY;\n")
+
+    exit_code = run_cli(monkeypatch, str(vhd), "--format", "json")
+
+    assert exit_code == 1
+    out = capsys.readouterr().out
+    violations = json.loads(out)
+    assert isinstance(violations, list)
+    assert len(violations) == 1
+    assert violations[0]["rule_id"] == "VHDL-001"
+    assert violations[0]["line"] == 1
+    assert violations[0]["severity"] == "ERROR"
+    assert "MY_ENTITY" in violations[0]["message"]
+
+
+def test_format_json_clean_file_returns_empty_array(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    vhd = tmp_path / "clean.vhd"
+    vhd.write_text("ENTITY my_entity IS\nEND ENTITY my_entity;\n")
+
+    exit_code = run_cli(monkeypatch, str(vhd), "--format", "json")
+
+    assert exit_code == 0
+    assert json.loads(capsys.readouterr().out) == []

@@ -1,9 +1,12 @@
+import argparse
+import json
 import sys
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from pyhdl_lint.core.engine import Engine
 from pyhdl_lint.core.reporter import Reporter
+from pyhdl_lint.core.rule_base import Violation
 from pyhdl_lint.utils.config import Config
 
 EXTENSION_TO_LANGUAGE = {
@@ -24,17 +27,33 @@ def _lint_file(file_path: Path, language: str, engine: Engine, config: Config, r
     reporter.report(file_path, violations)
     return len(violations)
 
+def _violations_to_json(violations: List[Violation]) -> str:
+    return json.dumps([
+        {
+            "rule_id": v.rule_id,
+            "line": v.line,
+            "column": v.column,
+            "severity": v.severity.value,
+            "message": v.message,
+        }
+        for v in violations
+    ])
+
 def main() -> int:
-    if len(sys.argv) < 2:
-        print("Usage: pyhdl-lint <file_or_directory_path>")
+    parser = argparse.ArgumentParser(prog="pyhdl-lint")
+    parser.add_argument("path", nargs="?")
+    parser.add_argument("--format", choices=["text", "json"], default="text")
+    args = parser.parse_args(sys.argv[1:])
+
+    if args.path is None:
+        print("Usage: pyhdl-lint <file_or_directory_path> [--format text|json]")
         return 1
 
-    target = Path(sys.argv[1])
+    target = Path(args.path)
     if not target.exists():
         print(f"Error: Path {target} not found.")
         return 1
 
-    reporter = Reporter()
     config = Config.load()
 
     if target.is_file():
@@ -44,6 +63,13 @@ def main() -> int:
             return 1
 
         engine = _load_engine(language)
+
+        if args.format == "json":
+            violations = engine.run(target, language, config=config)
+            print(_violations_to_json(violations))
+            return 1 if violations else 0
+
+        reporter = Reporter()
         if not reporter.quiet:
             print(f"Running {len(engine.rules)} rules for {language}...")
 
@@ -58,6 +84,7 @@ def main() -> int:
         print(f"No VHDL/Verilog/SystemVerilog files found under {target}.")
         return 0
 
+    reporter = Reporter()
     engines: Dict[str, Engine] = {}
     total_violations = 0
     for file_path in files:

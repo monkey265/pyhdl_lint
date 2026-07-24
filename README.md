@@ -101,7 +101,17 @@ pyhdl-lint <path_to_hdl_file>
 
 # Lint every .vhd/.vhdl/.v/.sv file under a directory, recursively
 pyhdl-lint <path_to_directory>
+
+# Machine-readable output (used by https://github.com/monkey265/pyhdl-lint-vscode)
+pyhdl-lint <path_to_hdl_file> --format json
 ```
+
+## Editor Integration
+
+A personal-use VSCode extension that lints on save lives in a separate repo:
+[pyhdl-lint-vscode](https://github.com/monkey265/pyhdl-lint-vscode). It depends on
+this repo's `.venv` being built (see Installation above) and consumes the
+`--format json` output shown above.
 
 ## Configuration
 
